@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Lottie from 'lottie-react';
-import avatarData from '@/public/avatar.json';
+import avatar from './data/avatar.json'
 
 export default function Page() {
   /** =============== SESSION ID PERSISTENTE =============== */
