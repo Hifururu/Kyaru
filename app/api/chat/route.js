@@ -1,15 +1,13 @@
-export const runtime = 'edge';
+// app/api/chat/route.js
+import { NextResponse } from 'next/server';
 
-import OpenAI from 'openai';
+export const runtime = 'edge'; // obligatorio en Cloudflare Pages
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'; // o el que uses
 const MEMORY_API_BASE = process.env.MEMORY_API_BASE || '';
-const KYARU_SYSTEM = (process.env.KYARU_SYSTEM_PROMPT || 'Eres Kyaru, una IA cercana...')
-  + '\n\nRegla extra: aplica de forma persistente cualquier preferencia que el usuario haya indicado explícitamente en turnos anteriores (p. ej., tono más cercano, saludos tipo “hey [nombre]”). Evita repetir “hola” en cada turno; usa variaciones naturales.';
+const KYARU_SYSTEM =
+  (process.env.KYARU_SYSTEM_PROMPT || 'Eres Kyaru, una IA cercana...') +
+  '\n\nRegla extra: aplica de forma persistente cualquier preferencia que el usuario haya indicado. Evita repetir “hola” en cada turno.';
 
 async function memoryLog(payload) {
   if (!MEMORY_API_BASE) return;
@@ -50,16 +48,17 @@ function deriveStylePreference(history) {
 export async function POST(req) {
   let body = {};
   try { body = await req.json(); } catch {}
-  const sessionId = String(body?.sessionId || '');
-  const text = String(body?.text || '');
-  const channel = String(body?.channel || 'web');
+
+  const sessionId = String(body.sessionId || '');
+  const text = String(body.text || '');
+  const channel = String(body.channel || 'web');
 
   await memoryLog({ ts: Date.now(), sessionId, channel, who: 'user', text });
 
   const recent = sessionId ? await memoryThread(sessionId, 12) : [];
   const chatHistory = recent.map(m => ({
     role: m.who === 'assistant' ? 'assistant' : 'user',
-    content: m.text,
+    content: m.text || '',
   }));
 
   const styleHint = deriveStylePreference(recent);
@@ -73,20 +72,30 @@ export async function POST(req) {
 
   let replyText = '...';
   try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages,
-      temperature: 0.8,
-      presence_penalty: 0.3,
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        temperature: 0.8,
+        presence_penalty: 0.3,
+      }),
     });
-    replyText = completion.choices?.[0]?.message?.content?.trim() || '...';
-  } catch (e) {
-    console.error('OpenAI error:', e?.response?.data || e?.message);
+    if (!r.ok) {
+      replyText = 'No pude conectar al modelo de OpenAI.';
+    } else {
+      const data = await r.json();
+      replyText = (data?.choices?.[0]?.message?.content || '...').trim();
+    }
+  } catch {
     replyText = 'No pude conectar al modelo de OpenAI. Tu mensaje quedó guardado en la memoria.';
   }
 
   await memoryLog({ ts: Date.now(), sessionId, channel, who: 'assistant', text: replyText });
-  return new Response(JSON.stringify({ text: replyText, meta: { mood: 'neutral' } }), {
-    headers: { 'content-type': 'application/json' },
-  });
+
+  return NextResponse.json({ text: replyText, meta: { mood: 'neutral' } });
 }
