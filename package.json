@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start",
     "pages:build": "npx @cloudflare/next-on-pages@latest",
-    "postinstall": "echo skip-telemetry"   // <- quita el comando de next aquí
+    "postinstall": "echo skip-telemetry"
   },
   "dependencies": {
     "next": "14.2.5",
