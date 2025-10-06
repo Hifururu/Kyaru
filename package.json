@@ -1,11 +1,22 @@
-"dependencies": {
-  "typescript": "5.6.2",
-  "@types/react": "18.3.5",
-  "@types/node": "20.14.10",
-  "next": "14.2.5",
-  "react": "18.3.1",
-  "react-dom": "18.3.1",
-  "lottie-react": "^2.4.0",
-  "openai": "^4.57.0"
-},
-"devDependencies": {}
+{
+  "name": "kyaru",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "pages:build": "npx @cloudflare/next-on-pages@latest",
+    "postinstall": "echo skip-telemetry"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lottie-react": "^2.4.0",
+    "openai": "^4.57.0",
+    "typescript": "5.6.2",
+    "@types/react": "18.3.5",
+    "@types/node": "20.14.10"
+  },
+  "devDependencies": {}
+}
