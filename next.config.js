@@ -4,4 +4,5 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   experimental: { typedRoutes: false },
 };
+
 module.exports = nextConfig;
